@@ -32,23 +32,35 @@ def _volume_label(root: str) -> str | None:
     return buf.value if ok else None
 
 
+def is_controlpad_label(label: str | None) -> bool:
+    # FAT pads labels to 11 chars with spaces; "CONTROLPAD" is 10, so some systems report
+    # "CONTROLPAD " -- compare trimmed and case-insensitively.
+    return (label or "").strip().upper() == VOLUME_LABEL
+
+
+def scan_drives() -> list[tuple[Path, int, str | None]]:
+    """(root, GetDriveType code, label) for every lettered volume. Windows only."""
+    k32 = ctypes.windll.kernel32
+    out = []
+    old = k32.SetErrorMode(1)  # SEM_FAILCRITICALERRORS: no "insert a disk" popups
+    try:
+        mask = k32.GetLogicalDrives()
+        for i, letter in enumerate(string.ascii_uppercase):
+            if mask & (1 << i):
+                root = f"{letter}:\\"
+                out.append((Path(root), k32.GetDriveTypeW(ctypes.c_wchar_p(root)), _volume_label(root)))
+    finally:
+        k32.SetErrorMode(old)
+    return out
+
+
 def find_controlpad() -> Path | None:
     """Return the root of the CONTROLPAD volume, or None if the keypad isn't in drive mode."""
     if sys.platform == "win32":
-        k32 = ctypes.windll.kernel32
-        old = k32.SetErrorMode(1)  # SEM_FAILCRITICALERRORS: no "insert a disk" popups
-        try:
-            mask = k32.GetLogicalDrives()
-            for i, letter in enumerate(string.ascii_uppercase):
-                if not mask & (1 << i):
-                    continue
-                root = f"{letter}:\\"
-                if k32.GetDriveTypeW(ctypes.c_wchar_p(root)) != DRIVE_REMOVABLE:
-                    continue
-                if (_volume_label(root) or "").upper() == VOLUME_LABEL:
-                    return Path(root)
-        finally:
-            k32.SetErrorMode(old)
+        # Match on the label regardless of drive type: some USB stacks report the keypad as fixed.
+        for root, _dtype, label in scan_drives():
+            if is_controlpad_label(label):
+                return root
         return None
     # macOS / Linux mount points (MacroMaster itself looks at /Volumes/CONTROLPAD/)
     for cand in (Path("/Volumes") / VOLUME_LABEL,

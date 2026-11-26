@@ -73,10 +73,28 @@ def cmd_verify(args) -> int:
     return 1
 
 
+_DRIVE_TYPES = {2: "removable", 3: "fixed", 4: "network", 5: "cd-rom", 6: "ramdisk"}
+
+
+def _resolve_drive(arg: str | None) -> Path | None:
+    """--drive F / F: / F:\\ overrides auto-detection."""
+    if not arg:
+        return drive.find_controlpad()
+    root = Path(arg.rstrip(":\\/") + ":\\") if len(arg.rstrip(":\\/")) == 1 else Path(arg)
+    if not root.is_dir():
+        raise drive.DriveError(f"{root} is not accessible")
+    return root
+
+
 def cmd_status(args) -> int:
-    root = drive.find_controlpad()
+    root = _resolve_drive(args.drive)
     if root is None:
         print("Keypad not in Flash Drive mode (no CONTROLPAD volume found).")
+        if sys.platform == "win32":
+            print("Volumes Windows reports:")
+            for r, dtype, label in drive.scan_drives():
+                print(f"  {str(r):5} {_DRIVE_TYPES.get(dtype, dtype)!s:10} label={label!r}")
+            print("If the keypad is one of these, pass it explicitly, e.g.  --drive F")
         return 1
     print(f"CONTROLPAD drive at {root}")
     for p in drive.list_bins(root):
@@ -88,7 +106,12 @@ def cmd_flash(args) -> int:
     src = Path(args.file)
     img = _load_image(src)
     decode_image(img)  # sanity check before touching the keypad
-    root = drive.find_controlpad()
+    root = _resolve_drive(args.drive)
+    if root is not None and args.drive and sys.platform == "win32":
+        label = next((lbl for r, _, lbl in drive.scan_drives() if r == root), None)
+        if not drive.is_controlpad_label(label):
+            print(f"warning: {root} is labelled {label!r}, not CONTROLPAD. Old .BIN files on it "
+                  "would be deleted. Make sure this really is the keypad.")
     if root is None:
         print("CONTROLPAD drive not found.\n"
               "  1. Move the switch on the back of the keypad to the Flash Drive position.\n"
@@ -126,11 +149,14 @@ def main(argv: list[str] | None = None) -> int:
     s = sub.add_parser("verify", help="check that a .ckd compiles to exactly the given .bin")
     s.add_argument("ckd"); s.add_argument("bin"); s.set_defaults(fn=cmd_verify)
 
+    drive_help = "keypad drive letter (e.g. F) instead of auto-detecting the CONTROLPAD volume"
     s = sub.add_parser("status", help="look for the keypad in Flash Drive mode")
+    s.add_argument("--drive", help=drive_help)
     s.set_defaults(fn=cmd_status)
 
     s = sub.add_parser("flash", help="copy a .ckd/.bin onto the keypad (Flash Drive mode)")
     s.add_argument("file"); s.add_argument("-y", "--yes", action="store_true", help="don't ask")
+    s.add_argument("--drive", help=drive_help)
     s.set_defaults(fn=cmd_flash)
 
     s = sub.add_parser("gui", help="open the graphical editor")
@@ -140,7 +166,7 @@ def main(argv: list[str] | None = None) -> int:
     args = p.parse_args(argv)
     try:
         return args.fn(args)
-    except (CompileError, ValueError, OSError) as exc:
+    except (CompileError, ValueError, OSError, drive.DriveError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
 

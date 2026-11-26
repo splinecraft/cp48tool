@@ -124,6 +124,15 @@ class CompilerRules(unittest.TestCase):
             compile_layout(lay)
 
 
+class DriveDetection(unittest.TestCase):
+    def test_label_padding_and_case(self):
+        from cp48tool.drive import is_controlpad_label
+        for ok in ("CONTROLPAD", "CONTROLPAD ", "controlpad", " ControlPad\t"):
+            self.assertTrue(is_controlpad_label(ok), repr(ok))
+        for bad in (None, "", "CONTROLPA", "CONTROLPAD2", "USB DRIVE"):
+            self.assertFalse(is_controlpad_label(bad), repr(bad))
+
+
 class MacroText(unittest.TestCase):
     def test_chord(self):
         self.assertEqual(from_text("Ctrl+Alt+K").hex(), "141142f011f014")
