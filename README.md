@@ -1,8 +1,13 @@
-# cp48tool
+# Genovation CPXX Keypad Tool
 
 A replacement programmer for Genovation ControlPad CP24 and CP48 keypads with the
 **Flash Drive** rear switch (firmware v1.x). It reads and writes MacroMaster `.ckd` files,
 compiles them to the keypad's `.bin` format, and copies the image onto the keypad.
+
+I own three of these Genovation keypads and really like them. However the original software is 
+currently a decade old and hasn't  worked for me for a long time now. It always failed trying 
+to write to them. I had Claude build this and now I can easily updateonce again. There is a gui 
+interface included as well.
 
 ## Use
 
