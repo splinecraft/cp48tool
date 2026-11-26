@@ -1,0 +1,4 @@
+*.bin binary
+*.ckd -text
+*.psd binary
+*.ai binary
