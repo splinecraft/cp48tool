@@ -7,3 +7,8 @@ dist/
 .venv/
 venv/
 .claude/
+
+# personal layouts and keycap art live in the project root locally, not in the repo
+/*.ckd
+/*.bin
+/images/

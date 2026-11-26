@@ -15,36 +15,32 @@ from cp48tool.macro import MacroError, from_text, to_text  # noqa: E402
 
 EXAMPLES = Path(r"C:\Program Files (x86)\Genovation\MacroMasterCPxx\Examples\Macro_Files")
 
+# Real .CKD files and the .BIN images MacroMaster compiled from them (golden references).
+FIXTURES = Path(__file__).resolve().parent / "fixtures"
+GOLDEN_CP48 = FIXTURES / "golden_cp48.ckd"
+
 
 class GoldenFiles(unittest.TestCase):
     """The compiler must reproduce .BIN files that MacroMaster wrote, byte for byte."""
 
     def check(self, stem: str) -> None:
-        ckd, binf = ROOT / f"{stem}.ckd", ROOT / f"{stem}.bin"
-        if not (ckd.exists() and binf.exists()):
-            self.skipTest(f"{stem} not present")
+        ckd, binf = FIXTURES / f"{stem}.ckd", FIXTURES / f"{stem}.bin"
         self.assertEqual(compile_layout(Layout.load(ckd)).hex(" "), binf.read_bytes().hex(" "))
 
     def test_cp48(self):
-        self.check("EricKeycommands")
+        self.check("golden_cp48")
 
     def test_cp24(self):
-        self.check("EricKeycommands_24")
+        self.check("golden_cp24")
 
-    def test_untitled_decodes(self):
-        p = ROOT / "untitled.bin"
-        if not p.exists():
-            self.skipTest("untitled.bin not present")
-        img = decode_image(p.read_bytes())
+    def test_empty_image_decodes(self):
+        img = decode_image((FIXTURES / "empty_cp48.bin").read_bytes())
         self.assertEqual(len(img.keys), 48)
         self.assertEqual(img.char_pacing, 4)
         self.assertTrue(all(not k.l1.codes and not k.l2.codes for k in img.keys))
 
     def test_decode_matches_ckd(self):
-        p = ROOT / "EricKeycommands.ckd"
-        if not p.exists():
-            self.skipTest("no ckd")
-        lay = Layout.load(p)
+        lay = Layout.load(GOLDEN_CP48)
         img = decode_image(compile_layout(lay))
         for k, d in zip(lay.keys, img.keys):
             self.assertEqual(d.l1.codes, k.l1.codes, f"KEY{k.index}")
@@ -52,7 +48,8 @@ class GoldenFiles(unittest.TestCase):
 
 class CkdRoundTrip(unittest.TestCase):
     def test_lossless(self):
-        files = [*ROOT.glob("*.ckd"), *(EXAMPLES.glob("*.ckd") if EXAMPLES.exists() else [])]
+        files = [*FIXTURES.glob("*.ckd"), *(EXAMPLES.glob("*.ckd") if EXAMPLES.exists() else [])]
+        self.assertTrue(files)
         for f in files:
             raw = f.read_bytes().decode("latin-1")
             if "Model_Number=MacroMaster" in raw:
@@ -177,11 +174,8 @@ class MacroText(unittest.TestCase):
                          "e01fe20132e205900ae230")
         self.assertEqual(to_text(bytes.fromhex("e065e20132e065")), "MouseForward delay(200) MouseForward")
 
-    def test_roundtrip_user_file(self):
-        p = ROOT / "EricKeycommands.ckd"
-        if not p.exists():
-            self.skipTest("no ckd")
-        for k in Layout.load(p).keys:
+    def test_roundtrip_golden_file(self):
+        for k in Layout.load(GOLDEN_CP48).keys:
             self.assertEqual(from_text(to_text(k.l1.codes)), k.l1.codes, f"KEY{k.index}")
 
     def test_errors(self):

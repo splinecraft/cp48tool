@@ -12,12 +12,16 @@ interface included as well.
 ## Use
 
 ```powershell
-.\cp48tool-gui.cmd EricKeycommands.ckd                         # editor (first run creates a venv in %LOCALAPPDATA%)
-python -m cp48tool show EricKeycommands.ckd                     # list macros
-python -m cp48tool flash EricKeycommands.ckd                    # program the keypad
-python -m cp48tool verify EricKeycommands.ckd EricKeycommands.bin
+.\cp48tool-gui.cmd my_layout.ckd                # editor (first run creates a venv in %LOCALAPPDATA%)
+python -m cp48tool show my_layout.ckd           # list macros
+python -m cp48tool flash my_layout.ckd          # program the keypad (add --drive F to skip auto-detect)
+python -m cp48tool verify my_layout.ckd my_layout.bin
 python -m unittest discover -s tests -v
 ```
+
+On Windows, use `py` instead of `python` if `python` only opens the Microsoft Store.
+Existing MacroMaster `.ckd` files open as-is. `tests/fixtures` holds real MacroMaster
+`.ckd`/`.bin` pairs that the compiler must reproduce byte for byte.
 
 How programming works:
 
