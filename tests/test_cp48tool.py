@@ -124,6 +124,36 @@ class CompilerRules(unittest.TestCase):
             compile_layout(lay)
 
 
+class GuiBehaviour(unittest.TestCase):
+    """Headless GUI checks; skipped when PySide6 isn't installed."""
+
+    @classmethod
+    def setUpClass(cls):
+        import os
+        os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+        try:
+            from PySide6.QtWidgets import QApplication
+        except ImportError:
+            raise unittest.SkipTest("PySide6 not installed")
+        cls.app = QApplication.instance() or QApplication([])
+
+    def test_clear_button_updates_key(self):
+        from PySide6.QtWidgets import QPushButton
+        from cp48tool.gui import MainWindow
+        w = MainWindow()
+        w.select(0)
+        w.levels[0].text.setText("Ctrl+Alt+K"); w.levels[0]._edited()
+        self.assertEqual(w.layout_.keys[0].l1.codes.hex(), "141142f011f014")
+        clear = next(b for b in w.levels[0].findChildren(QPushButton) if b.text() == "Clear")
+        clear.click()
+        self.assertEqual(w.layout_.keys[0].l1.codes, b"")
+        w.select(1); w.select(0)                      # re-selecting must not resurrect it
+        self.assertEqual(w.levels[0].text.text(), "")
+        self.assertNotIn("Ctrl+Alt+K", w.buttons[0].text())
+        w.dirty = False
+        w.close()
+
+
 class DriveDetection(unittest.TestCase):
     def test_label_padding_and_case(self):
         from cp48tool.drive import is_controlpad_label

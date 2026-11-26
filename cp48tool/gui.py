@@ -118,7 +118,8 @@ class LevelEditor(QWidget):
         self.record = RecordEdit()
         self.record.recorded.connect(self._append)
         clear = QPushButton("Clear")
-        clear.clicked.connect(lambda: self.text.setText(""))
+        clear.setToolTip("Erase this level's macro")
+        clear.clicked.connect(self.clear_macro)
         rec_row = QHBoxLayout()
         rec_row.addWidget(self.record, 1)
         rec_row.addWidget(clear)
@@ -149,6 +150,12 @@ class LevelEditor(QWidget):
         self.valid = True
         self.codes = b""
         self._loading = False
+
+    def clear_macro(self) -> None:
+        # setText() doesn't emit textEdited, so push the change to the model explicitly.
+        self.text.clear()
+        self.record.clear()
+        self._edited()
 
     def _append(self, chord: str) -> None:
         cur = self.text.text().strip()
