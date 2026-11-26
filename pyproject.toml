@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cp48tool"
+version = "0.1.0"
+description = "Replacement programmer for Genovation ControlPad CP24/CP48 keypads (Flash Drive firmware)"
+requires-python = ">=3.10"
+dependencies = []            # core + CLI are stdlib-only
+
+[project.optional-dependencies]
+gui = ["PySide6>=6.5"]
+
+[project.scripts]
+cp48tool = "cp48tool.cli:main"
+
+[project.gui-scripts]
+cp48tool-gui = "cp48tool.gui:run"
+
+[tool.setuptools]
+packages = ["cp48tool"]
