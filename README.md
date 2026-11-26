@@ -5,8 +5,8 @@ A replacement programmer for Genovation ControlPad CP24 and CP48 keypads with th
 compiles them to the keypad's `.bin` format, and copies the image onto the keypad.
 
 I own three of these Genovation keypads and really like them. However the original software is 
-currently a decade old and hasn't  worked for me for a long time now. It always failed trying 
-to write to them. I had Claude build this and now I can easily updateonce again. There is a gui 
+currently a decade old and hasn't worked for me for a long time now. It always failed trying 
+to write to them. I had Claude build this and now I can easily update once again. There is a gui 
 interface included as well.
 
 ## Use
